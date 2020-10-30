@@ -1,4 +1,5 @@
 const myconfig = require('./myconfig');
+const credentials = require('./credentials');
 const log = require('./log')(module);
 const fetch = require("node-fetch");
 
@@ -13,8 +14,8 @@ function sendTestMessage() {
         method: 'post',
         headers: {
             "Content-type": "application/json; charset=utf-8",
-            "X-User-Id":myconfig.rocket.user["X-User-Id"],
-            "X-Auth-Token":myconfig.rocket.user["X-Auth-Token"]
+            "X-User-Id":credentials.rocket.user["X-User-Id"],
+            "X-Auth-Token":credentials.rocket.user["X-Auth-Token"]
         },
         body: JSON.stringify(messageBody)
     }).then(
