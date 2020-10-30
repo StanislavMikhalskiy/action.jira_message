@@ -1,21 +1,54 @@
-const winston = require('winston');
+const { createLogger, format, transports } = require('winston');
+const { combine, timestamp, printf, label } = format;
+
+const myFormat = printf(({ level, message, timestamp, label}) => {
+    return `${level} ${timestamp} : ${message} [${label}]`;
+});
 
 function getLogger(module) {
-    var path = module.filename.split('/').slice(-2).join('/');
+    var path = module.filename.split('/').slice(-1).join('/');
 
-    return new winston.createLogger({
-        transports:[
-            new winston.transports.Console({
-                colorize: true,
-                level:'debug',
-                label:path
+    return new createLogger({
+        transports: [
+            new transports.Console({
+                format: format.combine(
+                    label({ label: path }),
+                    format.errors({ stack: true }),
+                    format.splat(),
+                    //format.json(),
+                    format.timestamp({
+                        format: 'YYYY-MM-DD HH:mm:ss.SSS'
+                    }),
+                    format.colorize(),
+                    myFormat
+                )
             }),
-            new winston.transports.File({
-                filename:'send.log',
-                label:path
-            })
-        ]
+            new transports.File({
+                filename: 'send.log',
+                format: format.combine(
+                    label({ label: path }),
+                    format.errors({ stack: true }),
+                    format.splat(),
+                    //format.json(),
+                    format.timestamp({
+                        format: 'YYYY-MM-DD HH:mm:ss.SSS'
+                    }),
+                    myFormat
+                )
+            }),
+        ],
     });
 }
+
+//
+// If we're not in production then log to the `console` with the format:
+// `${info.level}: ${info.message} JSON.stringify({ ...rest }) `
+//
+/*if (process.env.NODE_ENV !== 'production') {
+    logger.add(new winston.transports.Console({
+        format: winston.format.simple(),
+    }));
+}*/
+
 
 module.exports = getLogger;

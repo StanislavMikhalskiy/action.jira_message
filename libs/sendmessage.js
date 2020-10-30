@@ -1,24 +1,8 @@
 const myconfig = require('./myconfig');
-
+const log = require('./log')(module);
 const fetch = require("node-fetch");
 
-var log_level = 1;
-var logPrefix = ""
-
-function Smart_log(value){
-    var l = '';
-    for(var i = 0; i<log_level; i++) l+="|-";
-    var dt = new Date();
-    console.log(`${dt.getHours()}:${dt.getMinutes()}:${dt.getSeconds()}.${dt.getMilliseconds()} ${logPrefix}${l}${value}`);
-}
-
-Smart_log("Начало работы");
-
 function sendTestMessage() {
-    log_level++;
-    var ln = "sentTestMessage: ";
-    Smart_log(ln+`Начало работы`);
-
     var messageBody= {
         "channel": "#ssbot-test2", // #team-ss #ssbot-test2
         "text": "Привет"
@@ -37,24 +21,23 @@ function sendTestMessage() {
         function(response) {
             Smart_log(ln+`response.status = ${response.status}`);
             if (response.status != "200") {
-                Smart_log(ln+`Ошибка при создании задач в эпике поддержки status = ${response.status}`);
+                //Smart_log(ln+`Ошибка при создании задач в эпике поддержки status = ${response.status}`);
                 response.json().then(function(data) {
                     Smart_log(ln+`error ${JSON.stringify(data)}`);
                 });
             } else {
                 response.json().then(function(data) {
-                    Smart_log(ln+`Ответ ${JSON.stringify(data)}`);
+                    //Smart_log(ln+`Ответ ${JSON.stringify(data)}`);
                 })
             }
         }
     )
-        .catch(function (error) { Smart_log(ln+`Ошибка при создании задач в эпике поддержки ${error}`); });
+        .catch(function (error) { /*Smart_log(ln+`Ошибка при создании задач в эпике поддержки ${error}`);*/ });
 
-    log_level--;
 }
 
 function sendMessage() {
-    console.log("uwhefjwoeif");
+    log.info(sendMessage.name);
 }
 
 module.exports.sendMessage = sendMessage();
