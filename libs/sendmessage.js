@@ -3,10 +3,19 @@ const credentials = require('./credentials');
 const log = require('./log')(module);
 const fetch = require("node-fetch");
 
-function sendTestMessage() {
+var sendMessage = function(room, message) {
+    const uid = Math.random().toString(26).slice(2);
+    if (!room) {
+        log.warn("Не задан параметр 'room'");
+        return;
+    }
+    if (!message) {
+        log.warn("Не задан параметр 'message'");
+        return;
+    }
     var messageBody= {
-        "channel": "#ssbot-test2", // #team-ss #ssbot-test2
-        "text": "Привет"
+        "channel": `#${room}`, // #team-ss #ssbot-test2
+        "text": message
     }
 
     let url = new URL(myconfig.rocket.url.postMessage);
@@ -20,25 +29,23 @@ function sendTestMessage() {
         body: JSON.stringify(messageBody)
     }).then(
         function(response) {
-            Smart_log(ln+`response.status = ${response.status}`);
             if (response.status != "200") {
-                //Smart_log(ln+`Ошибка при создании задач в эпике поддержки status = ${response.status}`);
+                log.error(`Ошибка отправки сообщения, response.status = ${response.status} (uid=${uid})`);
+                log.error(`room = ${room} (uid=${uid})`);
                 response.json().then(function(data) {
-                    Smart_log(ln+`error ${JSON.stringify(data)}`);
+                    log.error(`${JSON.stringify(data)} (uid=${uid})`);
                 });
             } else {
-                response.json().then(function(data) {
+                log.info(`Сообщение успешно отправлено (uid=${uid})`);
+                /*response.json().then(function(data) {
                     //Smart_log(ln+`Ответ ${JSON.stringify(data)}`);
-                })
+                })*/
             }
         }
     )
-        .catch(function (error) { /*Smart_log(ln+`Ошибка при создании задач в эпике поддержки ${error}`);*/ });
-
+        .catch(function (error) {
+            log.error(`Ошибка отправки сообщения ${error} (uid=${uid})`);
+        });
 }
 
-function sendMessage() {
-    log.info(sendMessage.name);
-}
-
-module.exports.sendMessage = sendMessage();
+module.exports.sendMessage = sendMessage;

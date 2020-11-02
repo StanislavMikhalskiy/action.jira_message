@@ -2,6 +2,7 @@
   "name": "action.jira_message",
   "version": "1.0.0",
   "dependencies": {
-    "winston": "^3.3.3"
+    "winston": "^3.3.3",
+    "yargs": "^16.1.0"
   }
 }
