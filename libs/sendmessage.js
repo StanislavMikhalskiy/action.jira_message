@@ -36,7 +36,7 @@ var sendMessage = function(room, message) {
                     log.error(`${JSON.stringify(data)} (uid=${uid})`);
                 });
             } else {
-                log.info(`Сообщение успешно отправлено (uid=${uid})`);
+                log.info(`Сообщение успешно отправлено :) (uid=${uid})`);
                 /*response.json().then(function(data) {
                     //Smart_log(ln+`Ответ ${JSON.stringify(data)}`);
                 })*/
