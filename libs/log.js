@@ -1,5 +1,6 @@
 const { createLogger, format, transports } = require('winston');
 const { combine, timestamp, printf, label } = format;
+var appRoot = __dirname; //process.cwd();
 
 const myFormat = printf(({ level, message, timestamp, label}) => {
     return `${level} ${timestamp} : ${message} [${label}]`;
@@ -24,7 +25,7 @@ function getLogger(module) {
                 )
             }),
             new transports.File({
-                filename: 'send.log',
+                filename: appRoot+'/log/send.log',
                 format: format.combine(
                     label({ label: path }),
                     format.errors({ stack: true }),

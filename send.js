@@ -2,6 +2,7 @@ const arguments = require('yargs').argv;
 const module_sendmessage = require('./libs/sendmessage');
 const log = require('./libs/log')(module);
 
+
 if (!arguments.room) {
     log.warn("Не задан параметр 'room'");
     process.exit(0);
