@@ -25,7 +25,7 @@ function getLogger(module) {
                 )
             }),
             new transports.File({
-                filename: appRoot+'/log/send.log',
+                filename: appRoot+'/log/app.log',
                 format: format.combine(
                     label({ label: path }),
                     format.errors({ stack: true }),
