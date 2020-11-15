@@ -9,6 +9,7 @@ var vGlobal = {
         "viewIssue":jiraURL+"/browse/",
         "getIssue":jiraURL+"/rest/api/2/issue/", // vGlobal.jira.getIssue
         "postIssue":jiraURL+"/rest/api/2/issue/", // vGlobal.jira.postIssue
+        "searchIssue":jiraURL+"/rest/api/2/search", // vGlobal.jira.searchIssue
         "postIssueBulk":jiraURL+"/rest/api/2/issue/bulk/", // vGlobal.jira.postIssueBulk
         "postIssueLink":jiraURL+"/rest/api/2/issueLink/", // vGlobal.jira.postIssueLink
         "fields":{
@@ -53,9 +54,11 @@ var vGlobal = {
     }
 }
 
-function getIssue(issueCode){
+// возвращает объект запрошенной задачи
+function getIssue(issueCode,fields){
     return new Promise(function(resolve,reject){
         let url = new URL(vGlobal.jira.getIssue+issueCode);
+        if (fields) url.searchParams.set("fields", fields);
         fetch(url, {
             method: 'get',
             headers: {
@@ -74,6 +77,43 @@ function getIssue(issueCode){
                     resolve(JSON.stringify(data));
                 })
             }
+            }
+        )
+    })
+}
+// возвращает результаты работы фильтра
+function getIssuesByFilter(jqlQuery, fields){
+    var requestParams = [
+        {key:'maxResults',value:'1000'},
+        {key:'jql',value:jqlQuery},
+        {key:'fields',value:fields} // 'assignee,customfield_11304'
+        //,{key:'Detail',value:'CalcWorkloadfutureSprint'}
+        ];
+    return new Promise(function(resolve,reject){
+        let url = new URL(vGlobal.jira.searchIssue);
+        if (requestParams) {
+            for (let x of requestParams) {
+                url.searchParams.set(x.key, x.value);
+            }
+        }
+        fetch(url, {
+            method: 'get',
+            headers: {
+                "Content-type": "application/json; charset=utf-8",
+                "Authorization":credentials.jira.Authorization
+            }
+        }).then(response => {
+                if (response.status != "200") {
+                    log.error(`Ошибка выполнения запроса, response.status = ${response.status} `);
+                    response.json().then(function(data) {
+                        log.error(`${JSON.stringify(data)} `);
+                        reject(JSON.stringify(data));
+                    });
+                } else {
+                    response.json().then(function(data) {
+                        resolve(JSON.stringify(data));
+                    })
+                }
             }
         )
     })
@@ -117,3 +157,4 @@ function f2(){
 module.exports.f1 = f1
 module.exports.f2 = f2
 module.exports.getIssue = getIssue
+module.exports.getIssuesByFilter = getIssuesByFilter
