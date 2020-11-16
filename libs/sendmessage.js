@@ -3,7 +3,7 @@ const credentials = require('./credentials');
 const log = require('./log')(module);
 const fetch = require("node-fetch");
 
-var sendMessage = function(room, message) {
+var sendMessage = function(room, message, toAll) {
     const uid = Math.random().toString(26).slice(2);
     if (!room) {
         log.warn("Не задан параметр 'room'");
@@ -13,9 +13,13 @@ var sendMessage = function(room, message) {
         log.warn("Не задан параметр 'message'");
         return;
     }
+    var mess_toAll = "";
+    if (toAll) {
+        mess_toAll="@all "
+    }
     var messageBody= {
         "channel": `#${room}`, // #team-ss #ssbot-test2
-        "text": message
+        "text": `${mess_toAll}${message}`
     }
 
     let url = new URL(myconfig.rocket.url.postMessage);

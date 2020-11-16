@@ -13,10 +13,15 @@ if (!arguments.message) {
     process.exit(0);
 }
 
+var toAll = false;
+if (arguments.toAll) {
+    toAll = arguments.toAll;
+}
+
 /*for (let x of process.argv) {
     log.info(x);
 }*/
 
 //log.info(Math.random().toString(26).slice(2))
 
-module_sendmessage.sendMessage(arguments.room, arguments.message);
+module_sendmessage.sendMessage(arguments.room, arguments.message, toAll);
