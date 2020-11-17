@@ -85,7 +85,7 @@ function getWorkTime(teamData){
         developers+=dev.key+",";
     }
     developers = developers.slice(0,-1); // удаляем последнюю лишнюю запятую
-    var jqlQuery = `worklogDate >= "-${config.dayInPast}d" and worklogDate <= "-${config.dayInPast}d" and worklogAuthor in (${developers})`;
+    var jqlQuery = `worklogDate >= "-${config.dayInPast}d" and worklogDate <= "-${config.dayInPast}d" and worklogAuthor in (${developers})`;//
     var prWorklogs = m_jira.getIssuesByFilter(jqlQuery,"worklog");
     prWorklogs.then(
         result => {
@@ -139,10 +139,11 @@ function parseWorklog(team, worklogs){
         for (let issue of worklogs.issues) {
             for (let issueWorklog of issue.fields.worklog.worklogs) {
                 var d = new Date();
-                d.setDate(d.getDate()-4);
+                d.setDate(d.getDate()-config.dayInPast);
                 if ( issueWorklog.started.substr(0,10) == `${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`) {
                     issues.push({"key":issue.key, "author":issueWorklog.author.key, "timeSpentSeconds":issueWorklog.timeSpentSeconds, "timeSpentHR":issueWorklog.timeSpent});
                     //log.info(`${issueWorklog.started.substr(0,10)} ${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`);
+                    //log.info(`${issue.key} ${issueWorklog.author.key} ${issueWorklog.timeSpent}`);
                 }
             }
         }
