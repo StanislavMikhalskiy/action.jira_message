@@ -99,32 +99,7 @@ function getWorkTime(teamData){
     )
 }
 
-function sendReportMessage(teamWorklog){
-    var message = "Что мы делали вчера:"
-    var shortInfo = "";
-    var fullInfo = "";
-    for (let x of teamWorklog) {
-        var percent = (((x.timeSummaru/60/60)*100)/8).toFixed(0);
-        var emojy = "";
-        if (percent > 100) {
-            emojy = ":zany_face:";
-        } else if (percent <= 100 && percent >= 80) {
-            emojy = ""; // :thumbsup:
-        } else {
-            emojy = ":face_with_monocle:";
-        }
-        shortInfo+=`\n${x.key} - ${percent}% (${(x.timeSummaru/60/60).toFixed(1)} ч.) ${emojy}`
-        fullInfo+=`\n*${x.key}*`
-        for (let y of x.worklog) {
-            fullInfo+=`\n${y.key} - ${(y.timeSpentSeconds/60/60).toFixed(1)} (${y.timeSpentHR})`
-        }
-    }
-    //
-    message+=`${shortInfo}`;
-    //message+=`\n\n_Детальная информация_${fullInfo}`;
-    log.info(`${message}`);
-    m_sendmessage.sendMessage(config.room, message, config.toAll);
-}
+
 
 function parseWorklog(team, worklogs){
     //log.info(`${JSON.stringify(worklogs)}`);
@@ -141,7 +116,7 @@ function parseWorklog(team, worklogs){
                 var d = new Date();
                 d.setDate(d.getDate()-config.dayInPast);
                 if ( issueWorklog.started.substr(0,10) == `${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`) {
-                    issues.push({"key":issue.key, "author":issueWorklog.author.key, "timeSpentSeconds":issueWorklog.timeSpentSeconds, "timeSpentHR":issueWorklog.timeSpent});
+                    issues.push({"key":issue.key, "author":issueWorklog.author.name, "timeSpentSeconds":issueWorklog.timeSpentSeconds, "timeSpentHR":issueWorklog.timeSpent});
                     //log.info(`${issueWorklog.started.substr(0,10)} ${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`);
                     //log.info(`${issue.key} ${issueWorklog.author.key} ${issueWorklog.timeSpent}`);
                 }
@@ -170,6 +145,33 @@ function parseWorklog(team, worklogs){
         }
     }
     return res;
+}
+
+function sendReportMessage(teamWorklog){
+    var message = "Что мы делали вчера:"
+    var shortInfo = "";
+    var fullInfo = "";
+    for (let x of teamWorklog) {
+        var percent = (((x.timeSummaru/60/60)*100)/8).toFixed(0);
+        var emojy = "";
+        if (percent > 110) {
+            emojy = ":zany_face:";
+        } else if (percent <= 110 && percent >= 80) {
+            emojy = ""; // :thumbsup:
+        } else {
+            emojy = ":face_with_monocle:";
+        }
+        shortInfo+=`\n${x.key} - ${percent}% (${(x.timeSummaru/60/60).toFixed(1)} ч.) ${emojy}`
+        fullInfo+=`\n*${x.key}*`
+        for (let y of x.worklog) {
+            fullInfo+=`\n${y.key} - ${(y.timeSpentSeconds/60/60).toFixed(1)} (${y.timeSpentHR})`
+        }
+    }
+    //
+    message+=`${shortInfo}`;
+    //message+=`\n\n_Детальная информация_${fullInfo}`;
+    log.info(`${message}`);
+    m_sendmessage.sendMessage(config.room, message, config.toAll);
 }
 
 /*
