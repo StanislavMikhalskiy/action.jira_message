@@ -1,5 +1,6 @@
 const log = require('./log')(module);
 const fetch = require("node-fetch");
+const XMLHttpRequest = require("xmlhttprequest").XMLHttpRequest;
 const credentials = require('./credentials');
 
 // глобальные пемеренные
@@ -9,6 +10,7 @@ var vGlobal = {
         "viewIssue":jiraURL+"/browse/",
         "getIssue":jiraURL+"/rest/api/2/issue/", // vGlobal.jira.getIssue
         "postIssue":jiraURL+"/rest/api/2/issue/", // vGlobal.jira.postIssue
+        "getWorklog":jiraURL+"/rest/api/2/issue/", // `vGlobal.jira.getWorklog${issueIdOrKey}/worklog`
         "searchIssue":jiraURL+"/rest/api/2/search", // vGlobal.jira.searchIssue
         "postIssueBulk":jiraURL+"/rest/api/2/issue/bulk/", // vGlobal.jira.postIssueBulk
         "postIssueLink":jiraURL+"/rest/api/2/issueLink/", // vGlobal.jira.postIssueLink
@@ -54,6 +56,66 @@ var vGlobal = {
     }
 }
 
+function sleepFor( sleepDuration ){
+    var now = new Date().getTime();
+    while(new Date().getTime() < now + sleepDuration){ /* do nothing */ }
+}
+
+/* из-за ограничений на кол-во одновременных запросов городим такой огород */
+function getIssuesWorklogs(issues){
+    return new Promise(function(resolve,reject) {
+        // начало цепочки
+        let chain = Promise.resolve();
+        // массив выходных значений
+        let results = [];
+        for (let issue of issues) {
+            //log.info(`${issue.key} Запускаем получение данных`);
+            let url = new URL(`${vGlobal.jira.getWorklog}${issue.key}/worklog`);
+            chain = chain
+                .then(() => httpGet(url))
+                .then(response => {
+                        //log.info(`${issue.key} Получили данные ${response}`);
+                        results.push(response);
+                    },
+                    error => {
+                        //log.error(`Ошибка ${error}`);
+                    });
+        }
+        chain.then(() => {
+            //log.info(`Обработка данных завершена`);
+            //log.info(`results.length = ${results.length}`);
+            resolve(results);
+            //log.info(`${JSON.stringify(results[0])}`);
+        })
+    });
+}
+// используем XMLHttpRequest
+function httpGet(url) {
+    return new Promise(function(resolve, reject) {
+        var xhr = new XMLHttpRequest();
+        xhr.open('GET', url, true);
+        xhr.setRequestHeader("Content-type", "application/json");
+        xhr.setRequestHeader("Authorization", credentials.jira.Authorization);
+
+        xhr.onload = function() {
+            //log.info(`response = ${this.responseText}`);
+            if (this.status == 200) {
+                //log.info(`response = ${this.responseText}`);
+                resolve(this.responseText);
+            } else {
+                log.info(`status = ${this.status}, response = ${this.responseText}`);
+                //var error = new Error(this.statusText);
+                //error.code = this.status;
+                reject(this.responseText);
+            }
+        };
+        xhr.onerror = function() {
+            reject(new Error("Network Error"));
+        };
+        xhr.send();
+    });
+}
+
 // возвращает объект запрошенной задачи
 function getIssue(issueCode,fields){
     return new Promise(function(resolve,reject){
@@ -69,7 +131,7 @@ function getIssue(issueCode,fields){
             if (response.status != "200") {
                 log.error(`Ошибка выполнения запроса для ${issueCode}, response.status = ${response.status} `);
                 response.json().then(function(data) {
-                    log.error(`${JSON.stringify(data)} `);
+                    log.error(`${JSON.stringify(data)}`);
                     reject(JSON.stringify(data));
                 });
             } else {
@@ -79,6 +141,47 @@ function getIssue(issueCode,fields){
             }
             }
         )
+    })
+}
+// возвращает объект запрошенной задачи
+function getIssueWorklog(issueCode){
+    return new Promise(function(resolve,reject){
+        let url = new URL(`${vGlobal.jira.getWorklog}${issueCode}/worklog`);
+        //if (fields) url.searchParams.set("fields", fields);
+        //url.searchParams.set("maxResults", "1000");
+        fetch(url, {
+            method: 'get',
+            headers: {
+                "Content-type": "application/json; charset=utf-8",
+                "Authorization":credentials.jira.Authorization
+            }
+        }).then(response => {
+                if (response.status != "200") {
+                    log.error(`Ошибка выполнения запроса для ${issueCode}, response.status = ${response.status}`);
+                    //log.error(`${JSON.stringify(response)} `);
+                    //reject(response);
+                    /*response.json().then(function(data) {
+                        log.error(`${JSON.stringify(data)}`);
+                        reject(JSON.stringify(data));
+                    });*/
+                    reject(response);
+                } else {
+                    log.info(`${issueCode} получили ответ`);
+                    resolve(response);
+                    /*response.json().then(function(data) {
+                        log.info(`${issueCode} получили JSON`);
+                        resolve(JSON.stringify(data));
+                    })*/
+                }
+            },
+            error => {
+                //log.error(`${JSON.stringify(error)} `);
+                log.error(`Ошибка`);
+            }
+        )
+            .catch(error => {
+                log.error(`Ошибка ${error}`);
+            });
     })
 }
 // возвращает результаты работы фильтра
@@ -104,16 +207,21 @@ function getIssuesByFilter(jqlQuery, fields){
             }
         }).then(response => {
                 if (response.status != "200") {
-                    log.error(`Ошибка выполнения запроса, response.status = ${response.status} `);
-                    response.json().then(function(data) {
-                        log.error(`${JSON.stringify(data)} `);
+                    log.error(`Ошибка выполнения запроса, status = ${response.status}, message = ${response.statusText}`);
+                    /*response.json().then(function(data) {
+                        //log.error(`${JSON.stringify(data)}`);
                         reject(JSON.stringify(data));
-                    });
+                    });*/
+                    reject(response);
                 } else {
                     response.json().then(function(data) {
                         resolve(JSON.stringify(data));
                     })
                 }
+            },
+            error => {
+                log.error(`getIssuesByFilter: Ошибка выполнения`);
+                reject(error);
             }
         )
     })
@@ -158,3 +266,5 @@ module.exports.f1 = f1
 module.exports.f2 = f2
 module.exports.getIssue = getIssue
 module.exports.getIssuesByFilter = getIssuesByFilter
+module.exports.getIssueWorklog = getIssueWorklog
+module.exports.getIssuesWorklogs = getIssuesWorklogs

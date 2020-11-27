@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "dependencies": {
     "winston": "^3.3.3",
+    "xmlhttprequest": "^1.8.0",
     "yargs": "^16.1.0"
   }
 }

@@ -85,70 +85,159 @@ function getWorkTime(teamData){
         developers+=dev.key+",";
     }
     developers = developers.slice(0,-1); // удаляем последнюю лишнюю запятую
-    var jqlQuery = `worklogDate >= "-${config.dayInPast}d" and worklogDate <= "-${config.dayInPast}d" and worklogAuthor in (${developers})`;//
-    var prWorklogs = m_jira.getIssuesByFilter(jqlQuery,"worklog");
+    var addJQLDebug = ''; //`and issue in (SS-12024,SS-11970,SS-11834,SS-12008,SS-12062,SS-12061,SS-12060,SS-12019,SS-12050,SS-12102,SS-12056,SS-12088,SS-12030,SS-11981,SS-12085,SS-12070)`;
+    var jqlQuery = `worklogDate >= "-${config.dayInPast}d" and worklogDate <= "-${config.dayInPast}d" and worklogAuthor in (${developers}) ${addJQLDebug}`;//
+    var prWorklogs = m_jira.getIssuesByFilter(jqlQuery,"key");
     prWorklogs.then(
         result => {
             //log.info(`${result}`);
-            var teamWorklog = parseWorklog(teamData,JSON.parse(result));
-            sendReportMessage(teamWorklog); // ssbot-test2 ss-head
+            parseWorklogSlowly(teamData,JSON.parse(result));
         },
         error => {
-            //log.info(`${JSON.stringify(error)}`);
+            log.error(`Ошибка ${JSON.stringify(error)}`);
         }
     )
 }
 
-
-
-function parseWorklog(team, worklogs){
-    //log.info(`${JSON.stringify(worklogs)}`);
-    // готовим данные для возврата из функции
-    var res = [];
-    for (let dev of team) {
-        res.push({"key":dev.key, "role":dev.role, "worklog":[]});
-    }
-    // формируем плоский массив по задачам и затраченному времени
-    var issues = [];
-    if (worklogs.total > 0) {
-        for (let issue of worklogs.issues) {
-            for (let issueWorklog of issue.fields.worklog.worklogs) {
-                var d = new Date();
-                d.setDate(d.getDate()-config.dayInPast);
-                if ( issueWorklog.started.substr(0,10) == `${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`) {
-                    issues.push({"key":issue.key, "author":issueWorklog.author.name, "timeSpentSeconds":issueWorklog.timeSpentSeconds, "timeSpentHR":issueWorklog.timeSpent});
-                    //log.info(`${issueWorklog.started.substr(0,10)} ${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`);
-                    //log.info(`${issue.key} ${issueWorklog.author.key} ${issueWorklog.timeSpent}`);
-                }
-            }
-        }
-    }
-    // считаем сумму времени по каждому сотруднику
-    for (let dev of res) {
-        dev["timeSummaru"] = 0;
-        var x = issues.filter(item => item.author == dev.key);
-        if (x.length>0) {
-            // обходим все зарачи по разработчику
-            for (let y of x) {
-                // считаем сумму времени по всем задачам
-                dev.timeSummaru += y.timeSpentSeconds;
-                // считаем сумму времени по одной задачу для детализации
-                // проверяем, есть ли уже такая задача в массиве, если нет, добавляем
-                var issueX = dev.worklog.find(item => item.key == y.key);
-                if (issueX) {
-                    issueX.timeSpentSeconds+=y.timeSpentSeconds;
-                    issueX.timeSpentHR+=` ${y.timeSpentHR}`
-                } else {
-                    dev.worklog.push({"key":y.key, "timeSpentSeconds":y.timeSpentSeconds, "timeSpentHR":y.timeSpentHR})
-                }
-            }
-        }
-    }
-    return res;
+function sleepFor( sleepDuration ){
+    var now = new Date().getTime();
+    while(new Date().getTime() < now + sleepDuration){ /* do nothing */ }
 }
 
-function sendReportMessage(teamWorklog){
-    var message = "Что мы делали вчера:"
+// синхронный запрос ворклогов для борьбы с ограничениями API от админов
+function parseWorklogSlowly(team, obj){
+    //log.info(`${JSON.stringify(obj)}`);
+    // готовим данные для возврата из функции
+    var developersWorklog = [];
+    for (let dev of team) {
+        developersWorklog.push({"key":dev.key, "role":dev.role, "worklog":[]});
+    }
+    // вычисляем дату
+    var d = new Date();
+    d.setDate(d.getDate()-config.dayInPast);
+    // формируем строку для сравнения
+    var date_compare = `${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`;
+    // формируем плоский массив по задачам и затраченному времени
+    var issues = [];
+    if (obj.total > 0) {
+        // обходим все задачи и для каждой формируем запрос ворклогов
+        var issuesWorklogsPromise =  m_jira.getIssuesWorklogs(obj.issues);
+        issuesWorklogsPromise.then(
+            result => {
+                //log.info(`${result[0]}`);
+                // обходим результаты по задачам
+                for(let issueWorklogs of result){
+                    let objIssueWorklogs = JSON.parse(issueWorklogs);
+                    // обходим worklog-и по задаче
+                    for(let worklog of objIssueWorklogs.worklogs){
+                        //log.info(`${worklog.issueId}`);
+                        if ( worklog.started.substr(0,10) == date_compare) {
+                            issues.push({"key":"", "issueId":worklog.issueId, "author":worklog.author.name, "timeSpentSeconds":worklog.timeSpentSeconds, "timeSpentHR":worklog.timeSpent});
+                        }
+                    }
+                }
+                // считаем сумму времени по каждому сотруднику
+                for (let dev of developersWorklog) {
+                    dev["timeSummaru"] = 0;
+                    var x = issues.filter(item => item.author == dev.key);
+                    if (x.length>0) {
+                        // обходим все зарачи по разработчику
+                        for (let y of x) {
+                            // считаем сумму времени по всем задачам
+                            dev.timeSummaru += y.timeSpentSeconds;
+                            // считаем сумму времени по одной задачу для детализации
+                            // проверяем, есть ли уже такая задача в массиве, если нет, добавляем
+                            var issueX = dev.worklog.find(item => item.issueId == y.issueId);
+                            if (issueX) {
+                                issueX.timeSpentSeconds+=y.timeSpentSeconds;
+                                issueX.timeSpentHR+=` ${y.timeSpentHR}`
+                            } else {
+                                dev.worklog.push({"issueId":y.issueId, "timeSpentSeconds":y.timeSpentSeconds, "timeSpentHR":y.timeSpentHR})
+                            }
+                        }
+                    }
+                }
+                sendReportMessage(developersWorklog,date_compare); // ssbot-test2 ss-head
+            },
+            error => {
+                log.error(`Ошибка ${JSON.stringify(error)}`);
+            }
+        )
+    }
+}
+
+function parseWorklog(team, obj){
+    //log.info(`${JSON.stringify(obj)}`);
+    // готовим данные для возврата из функции
+    var developersWorklog = [];
+    for (let dev of team) {
+        developersWorklog.push({"key":dev.key, "role":dev.role, "worklog":[]});
+    }
+    // вычисляем дату
+    var d = new Date();
+    d.setDate(d.getDate()-config.dayInPast);
+    // формируем строку для сравнения
+    var date_compare = `${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`;
+    // формируем плоский массив по задачам и затраченному времени
+    var issues = [];
+    if (obj.total > 0) {
+        // обходим все задачи и для каждой формируем запрос ворклогов
+        var issuePromise = [];
+        for (let issue of obj.issues) {
+            var promise = m_jira.getIssueWorklog(issue.key);
+            //sleepFor(300);
+            issuePromise.push(promise);
+            log.info(`Добавили промис для ${issue.key}`);
+        }
+        Promise.all(issuePromise)
+            .then(responses => {
+                    // все промисы успешно завершены
+                    log.info(`Промисы успешно отработали`);
+                    /*for(let response of responses) {
+                        var obj_res = JSON.parse(response);
+                        log.info(`Ответ каждого промиса ${obj_res.worklogs[0].issueId}`);
+                        // обходим результаты ворклогов позадачно
+                        for (let worklog of obj_res.worklogs){
+                            if ( worklog.created.substr(0,10) == date_compare) {
+                                issues.push({"key":"", "issueId":worklog.issueId, "author":worklog.author.name, "timeSpentSeconds":worklog.timeSpentSeconds, "timeSpentHR":worklog.timeSpent});
+                            }
+                        }
+                    }
+                    // считаем сумму времени по каждому сотруднику
+                    for (let dev of developersWorklog) {
+                        dev["timeSummaru"] = 0;
+                        var x = issues.filter(item => item.author == dev.key);
+                        if (x.length>0) {
+                            // обходим все зарачи по разработчику
+                            for (let y of x) {
+                                // считаем сумму времени по всем задачам
+                                dev.timeSummaru += y.timeSpentSeconds;
+                                // считаем сумму времени по одной задачу для детализации
+                                // проверяем, есть ли уже такая задача в массиве, если нет, добавляем
+                                var issueX = dev.worklog.find(item => item.issueId == y.issueId);
+                                if (issueX) {
+                                    issueX.timeSpentSeconds+=y.timeSpentSeconds;
+                                    issueX.timeSpentHR+=` ${y.timeSpentHR}`
+                                } else {
+                                    dev.worklog.push({"issueId":y.issueId, "timeSpentSeconds":y.timeSpentSeconds, "timeSpentHR":y.timeSpentHR})
+                                }
+                            }
+                        }
+                    }
+                    sendReportMessage(developersWorklog); // ssbot-test2 ss-head
+                     */
+                },
+                error => {
+                    //log.error(`${JSON.stringify(error)} `);
+                    log.error(`Ошибка ${JSON.stringify(error)}`);
+                }
+            )
+        //.catch(log.error(`Ошибка обработки промисов`));
+    }
+}
+
+function sendReportMessage(teamWorklog, date){
+    var message = `Что мы делали ${date}:`
     var shortInfo = "";
     var fullInfo = "";
     for (let x of teamWorklog) {
@@ -164,7 +253,7 @@ function sendReportMessage(teamWorklog){
         shortInfo+=`\n${x.key} - ${percent}% (${(x.timeSummaru/60/60).toFixed(1)} ч.) ${emojy}`
         fullInfo+=`\n*${x.key}*`
         for (let y of x.worklog) {
-            fullInfo+=`\n${y.key} - ${(y.timeSpentSeconds/60/60).toFixed(1)} (${y.timeSpentHR})`
+            fullInfo+=`\n${y.issueId} - ${(y.timeSpentSeconds/60/60).toFixed(1)} (${y.timeSpentHR})`
         }
     }
     //
