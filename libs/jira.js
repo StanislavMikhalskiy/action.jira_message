@@ -1,5 +1,5 @@
 const log = require('./log')(module);
-const fetch = require("node-fetch");
+const fetch = require("node-fetch"); // npm install node-fetch
 const XMLHttpRequest = require("xmlhttprequest").XMLHttpRequest;
 const credentials = require('./credentials');
 
