@@ -157,7 +157,8 @@ function parseWorklogSlowly(team, obj){
                         }
                     }
                 }
-                sendReportMessage(developersWorklog,date_compare); // ssbot-test2 ss-head
+                sendReportMessage(developersWorklog,date_compare); // ssbot-test2 ss-head team-ss
+                // node E:\Project\action.jira_message\show_log_work.js --room=team-webarm --rapidView=117 --day=1 --toAll=1
             },
             error => {
                 log.error(`Ошибка ${JSON.stringify(error)}`);
