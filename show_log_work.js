@@ -116,7 +116,7 @@ function parseWorklogSlowly(team, obj){
     var d = new Date();
     d.setDate(d.getDate()-config.dayInPast);
     // формируем строку для сравнения
-    var date_compare = `${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`;
+    var date_compare = `${d.getFullYear()}-${('0' + (d.getMonth()+1)).slice(-2)}-${('0' + d.getDate()).slice(-2)}`;
     // формируем плоский массив по задачам и затраченному времени
     var issues = [];
     if (obj.total > 0) {
