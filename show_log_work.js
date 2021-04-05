@@ -244,9 +244,9 @@ function sendReportMessage(teamWorklog, date){
     for (let x of teamWorklog) {
         var percent = (((x.timeSummaru/60/60)*100)/8).toFixed(0);
         var emojy = "";
-        if (percent > 110) {
+        if (percent > 200) {
             emojy = ":zany_face:";
-        } else if (percent <= 110 && percent >= 80) {
+        } else if (percent <= 200 && percent >= 60) {
             emojy = ""; // :thumbsup:
         } else {
             emojy = ":face_with_monocle:";
