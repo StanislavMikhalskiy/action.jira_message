@@ -21,11 +21,6 @@ if (arguments.day) {
     _dayInPast = arguments.day;
 }
 
-var _toAll = false;
-if (arguments.toAll == 1) {
-    _toAll=true;
-}
-
 /*
 TODO
 
@@ -44,12 +39,11 @@ TODO
 var config = {
     "rapidView": arguments.rapidView, //"136"
     "room": arguments.room, //ssbot-test2 ss-head
-    "dayInPast": _dayInPast,
-    "toAll": _toAll
+    "dayInPast": _dayInPast
 }
 
 // считываем настройки по командам
-var prTeamsConfigData =  m_jira.getIssue("PSQL-222","description");
+let prTeamsConfigData =  m_jira.getIssue("PSQL-222","description");
 prTeamsConfigData.then(
     result => {
         var obj = JSON.parse(result);
@@ -80,14 +74,14 @@ prTeamsConfigData.then(
 
 function getWorkTime(teamData){
     // формируем данные для запроса
-    var developers = "";
+    let developers = "";
     for (let dev of teamData) {
         developers+=dev.key+",";
     }
     developers = developers.slice(0,-1); // удаляем последнюю лишнюю запятую
-    var addJQLDebug = ''; //`and issue in (SS-12024,SS-11970,SS-11834,SS-12008,SS-12062,SS-12061,SS-12060,SS-12019,SS-12050,SS-12102,SS-12056,SS-12088,SS-12030,SS-11981,SS-12085,SS-12070)`;
-    var jqlQuery = `worklogDate >= "-${config.dayInPast}d" and worklogDate <= "-${config.dayInPast}d" and worklogAuthor in (${developers}) ${addJQLDebug}`;//
-    var prWorklogs = m_jira.getIssuesByFilter(jqlQuery,"key");
+    let addJQLDebug = ''; //`and issue in (SS-12024,SS-11970,SS-11834,SS-12008,SS-12062,SS-12061,SS-12060,SS-12019,SS-12050,SS-12102,SS-12056,SS-12088,SS-12030,SS-11981,SS-12085,SS-12070)`;
+    let jqlQuery = `worklogDate >= "-${config.dayInPast}d" and worklogDate <= "-${config.dayInPast}d" and worklogAuthor in (${developers}) ${addJQLDebug}`;//
+    let prWorklogs = m_jira.getIssuesByFilter(jqlQuery,"key");
     prWorklogs.then(
         result => {
             //log.info(`${result}`);
@@ -108,20 +102,20 @@ function sleepFor( sleepDuration ){
 function parseWorklogSlowly(team, obj){
     //log.info(`${JSON.stringify(obj)}`);
     // готовим данные для возврата из функции
-    var developersWorklog = [];
+    let developersWorklog = [];
     for (let dev of team) {
         developersWorklog.push({"key":dev.key, "role":dev.role, "worklog":[]});
     }
     // вычисляем дату
-    var d = new Date();
+    let d = new Date();
     d.setDate(d.getDate()-config.dayInPast);
     // формируем строку для сравнения
-    var date_compare = `${d.getFullYear()}-${('0' + (d.getMonth()+1)).slice(-2)}-${('0' + d.getDate()).slice(-2)}`;
+    let date_compare = `${d.getFullYear()}-${('0' + (d.getMonth()+1)).slice(-2)}-${('0' + d.getDate()).slice(-2)}`;
     // формируем плоский массив по задачам и затраченному времени
-    var issues = [];
+    let issues = [];
     if (obj.total > 0) {
         // обходим все задачи и для каждой формируем запрос ворклогов
-        var issuesWorklogsPromise =  m_jira.getIssuesWorklogs(obj.issues);
+        let issuesWorklogsPromise =  m_jira.getIssuesWorklogs(obj.issues);
         issuesWorklogsPromise.then(
             result => {
                 //log.info(`${result[0]}`);
@@ -139,7 +133,7 @@ function parseWorklogSlowly(team, obj){
                 // считаем сумму времени по каждому сотруднику
                 for (let dev of developersWorklog) {
                     dev["timeSummaru"] = 0;
-                    var x = issues.filter(item => item.author == dev.key);
+                    let x = issues.filter(item => item.author == dev.key);
                     if (x.length>0) {
                         // обходим все зарачи по разработчику
                         for (let y of x) {
@@ -147,7 +141,7 @@ function parseWorklogSlowly(team, obj){
                             dev.timeSummaru += y.timeSpentSeconds;
                             // считаем сумму времени по одной задачу для детализации
                             // проверяем, есть ли уже такая задача в массиве, если нет, добавляем
-                            var issueX = dev.worklog.find(item => item.issueId == y.issueId);
+                            let issueX = dev.worklog.find(item => item.issueId == y.issueId);
                             if (issueX) {
                                 issueX.timeSpentSeconds+=y.timeSpentSeconds;
                                 issueX.timeSpentHR+=` ${y.timeSpentHR}`
@@ -158,7 +152,7 @@ function parseWorklogSlowly(team, obj){
                     }
                 }
                 sendReportMessage(developersWorklog,date_compare); // ssbot-test2 ss-head team-ss
-                // node E:\Project\action.jira_message\show_log_work.js --room=team-webarm --rapidView=117 --day=1 --toAll=1
+                // node E:\Project\action.jira_message\show_log_work.js --room=team-webarm --rapidView=117 --day=1
             },
             error => {
                 log.error(`Ошибка ${JSON.stringify(error)}`);
@@ -238,20 +232,33 @@ function parseWorklog(team, obj){
 }
 
 function sendReportMessage(teamWorklog, date){
-    var message = `Что мы делали ${date}:`
-    var shortInfo = "";
-    var fullInfo = "";
+    let message = ""
+    let shortInfo = "";
+    let shortInfoArr = [];
+    let fullInfo = "";
+    teamWorklog.sort((a, b) => b.timeSummaru - a.timeSummaru);
     for (let x of teamWorklog) {
-        var percent = (((x.timeSummaru/60/60)*100)/8).toFixed(0);
-        var emojy = "";
+        let percent = (((x.timeSummaru/60/60)*100)/8).toFixed(0);
+        let sidebar_color = "";
         if (percent > 200) {
-            emojy = ":zany_face:";
+            sidebar_color = "#9a00ff";
         } else if (percent <= 200 && percent >= 60) {
-            emojy = ""; // :thumbsup:
+            sidebar_color = "#30fc02"; // :thumbsup:
         } else {
-            emojy = ":face_with_monocle:";
+            sidebar_color = "#ff0000";
         }
-        shortInfo+=`\n${x.key} - ${percent}% (${(x.timeSummaru/60/60).toFixed(1)} ч.) ${emojy}`
+        //shortInfo+=`\n${x.key} - ${percent}% (${(x.timeSummaru/60/60).toFixed(1)} ч.) ${emojy}`
+        shortInfo = {
+            "type": "section",
+            "sidebar_color": sidebar_color,
+            "sections": [
+                {
+                    "type": "message",
+                    "text": `${x.key} - ${percent}% (${(x.timeSummaru/60/60).toFixed(1)} ч.)`
+                }
+            ]
+        }
+        shortInfoArr.push(shortInfo);
         fullInfo+=`\n*${x.key}*`
         for (let y of x.worklog) {
             fullInfo+=`\n${y.issueId} - ${(y.timeSpentSeconds/60/60).toFixed(1)} (${y.timeSpentHR})`
@@ -261,7 +268,19 @@ function sendReportMessage(teamWorklog, date){
     message+=`${shortInfo}`;
     //message+=`\n\n_Детальная информация_${fullInfo}`;
     log.info(`${message}`);
-    m_sendmessage.sendMessage(config.room, message, config.toAll);
+    let mess = {
+        "is_markdown_support": true,
+        "content": {
+            "head": {
+                "text": `Залогированное время`,
+                "sub_head": {
+                    "text": `за ${date}`
+                }
+            },
+            "body": shortInfoArr
+        }
+    }
+    m_sendmessage.sendMessageZoomWH(config.room,mess)
 }
 
 /*

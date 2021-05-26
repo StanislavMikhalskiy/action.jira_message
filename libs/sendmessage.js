@@ -3,7 +3,7 @@ const credentials = require('./credentials');
 const log = require('./log')(module);
 const fetch = require("node-fetch");
 
-var sendMessage = function(room, message, toAll) {
+let sendMessage = function(room, message) {
     const uid = Math.random().toString(26).slice(2);
     if (!room) {
         log.warn("Не задан параметр 'room'");
@@ -52,4 +52,50 @@ var sendMessage = function(room, message, toAll) {
         });
 }
 
+let sendMessageZoomWH = function(room, message) {
+    const uid = Math.random().toString(26).slice(2);
+    if (!room) {
+        log.warn("Не задан параметр 'url'");
+        return;
+    }
+    if (!message) {
+        log.warn("Не задан параметр 'message'");
+        return;
+    }
+    let messageBody= message;
+
+    let channel_url = credentials.zoom[room] && credentials.zoom[room].url;
+    let channel_token = credentials.zoom[room] && credentials.zoom[room].token;
+
+    if (channel_url && channel_token) {
+        let url = new URL(`${channel_url}?format=full`);
+        fetch(url, {
+            method: 'post',
+            headers: {
+                "Content-type": "application/json; charset=utf-8",
+                "Authorization": `Bearer ${channel_token}`
+            },
+            body: JSON.stringify(messageBody)
+        }).then(
+            function(response) {
+                if (response.status != "200") {
+                    log.error(`Ошибка отправки сообщения, response.status = ${response.status} (uid=${uid})`);
+                    response.json().then(function(data) {
+                        log.error(`${JSON.stringify(data)} (uid=${uid})`);
+                    });
+                } else {
+                    log.info(`Сообщение успешно отправлено (uid=${uid})`);
+                    /*response.json().then(function(data) {
+                        //Smart_log(ln+`Ответ ${JSON.stringify(data)}`);
+                    })*/
+                }
+            }
+        )
+            .catch(function (error) {
+                log.error(`Ошибка отправки сообщения ${error} (uid=${uid})`);
+            });
+    } else log.warn(`Не удалось определить данные канала для room = ${room}`);
+}
+
 module.exports.sendMessage = sendMessage;
+module.exports.sendMessageZoomWH = sendMessageZoomWH;
