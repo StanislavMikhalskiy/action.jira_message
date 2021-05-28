@@ -1,3 +1,4 @@
 *.log
 /libs/credentials.js
 /node_modules/
+.idea/
