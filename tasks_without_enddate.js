@@ -129,7 +129,7 @@ function sendReportMessage(developers){
             "head": {
                 "text": `Задачи без указания даты готовности`,
                 "sub_head": {
-                    "text": `EndDate`
+                    "text": `Ставим EndDate в задачу`
                 }
             },
             "body": messages
