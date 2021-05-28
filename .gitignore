@@ -1,4 +1,3 @@
-/libs/send.log
+*.log
 /libs/credentials.js
-/libs/log/send.log
-/libs/log/app.log
+/node_modules/
