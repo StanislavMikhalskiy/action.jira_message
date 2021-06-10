@@ -28,7 +28,7 @@ let mess = {
         "body": [
             {
                 "type": "message",
-                "text": `${arguments.message}`
+                "text": `<!all> ${arguments.message}`
             }
         ]
     }
