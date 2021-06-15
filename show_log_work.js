@@ -16,7 +16,7 @@ if (!arguments.room) {
     process.exit(0);
 }
 
-var _dayInPast = 1;
+let _dayInPast = 1;
 if (arguments.day) {
     _dayInPast = arguments.day;
 }
@@ -36,24 +36,27 @@ TODO
  jql=project%3D%2210900%22%20and%20worklogDate%20%3E%3D%20%222020-10-29%22%20and%20worklogDate%20%3C%20%222020-11-07%22&startAt=0&_=1605275998929
 
 * */
-var config = {
+let config = {
     "rapidView": arguments.rapidView, //"136"
     "room": arguments.room, //ssbot-test2 ss-head
     "dayInPast": _dayInPast
 }
 
+log.info(`Запуск show_log_work, rapidView = ${config.rapidView}, room = ${config.room}`);
+
 // считываем настройки по командам
 let prTeamsConfigData =  m_jira.getIssue("PSQL-222","description");
 prTeamsConfigData.then(
     result => {
-        var obj = JSON.parse(result);
+        let obj = JSON.parse(result);
+        //log.info(`${JSON.stringify(obj)}`);
         if ('fields' in obj && obj.fields != null) {
             if ('description' in obj.fields && obj.fields.description != null) {
                 // очистка данных
-                var x = JSON.stringify(obj.fields.description).replace(/{code:json}|{code}|\\r|\\n|\\/g, '');
+                let x = JSON.stringify(obj.fields.description).replace(/{code:json}|{code}|\\r|\\n|\\/g, '');
                 x = x.replace(/"\[{/g, '[{');
                 x = x.replace(/}\]"/g, '}]');
-                var teamsData = JSON.parse(x);
+                let teamsData = JSON.parse(x);
                 // обходим полученный массив комманд
                 for (let teamData of teamsData) {
                     //log.info(`teamData.rapidView ${teamData.rapidView}`);
@@ -81,6 +84,7 @@ function getWorkTime(teamData){
     developers = developers.slice(0,-1); // удаляем последнюю лишнюю запятую
     let addJQLDebug = ''; //`and issue in (SS-12024,SS-11970,SS-11834,SS-12008,SS-12062,SS-12061,SS-12060,SS-12019,SS-12050,SS-12102,SS-12056,SS-12088,SS-12030,SS-11981,SS-12085,SS-12070)`;
     let jqlQuery = `worklogDate >= "-${config.dayInPast}d" and worklogDate <= "-${config.dayInPast}d" and worklogAuthor in (${developers}) ${addJQLDebug}`;//
+    //log.info(`jqlQuery = ${jqlQuery}`);
     let prWorklogs = m_jira.getIssuesByFilter(jqlQuery,"key");
     prWorklogs.then(
         result => {
