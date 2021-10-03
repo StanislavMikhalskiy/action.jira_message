@@ -45,7 +45,27 @@ let config = {
 log.info(`Запуск show_log_work, rapidView = ${config.rapidView}, room = ${config.room}`);
 
 // считываем настройки по командам
-let prTeamsConfigData =  m_jira.getIssue("PSQL-222","description");
+m_jira.getJson("https://dev.gitlab-pages.aservices.tech/jira-automatizator-scripts/planningConfig.json")
+    .then(
+        data => {
+            //log(JSON.stringify(data));
+            let objTeamPermissions = [];
+            let teamsData = data;//JSON.parse(x);
+            // обходим полученный массив комманд
+            for (let teamData of teamsData) {
+                //log.info(`teamData.rapidView ${teamData.rapidView}`);
+                if ('rapidView' in teamData && teamData.rapidView != null && teamData.rapidView==config.rapidView) {
+                    //log.info(`Нашли команду ${JSON.stringify(teamData.team)}`);
+                    getWorkTime(teamData.team);
+                    break;
+                }
+            }
+        }
+    ).catch(error => {
+    log.error(error.message);
+    log.error(`Не удалось получить настройки по доскам и командам`);
+});
+/*let prTeamsConfigData =  m_jira.getIssue("PSQL","description");
 prTeamsConfigData.then(
     result => {
         let obj = JSON.parse(result);
@@ -73,7 +93,7 @@ prTeamsConfigData.then(
     error => {
         log.error(`Не удалось считать настройки по командам`);
     }
-)
+)*/
 
 function getWorkTime(teamData){
     // формируем данные для запроса

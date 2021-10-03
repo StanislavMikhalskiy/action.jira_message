@@ -19,6 +19,27 @@ let config = {
 }
 
 // считываем настройки по командам
+m_jira.getJson("https://dev.gitlab-pages.aservices.tech/jira-automatizator-scripts/planningConfig.json")
+    .then(
+        data => {
+            //log(JSON.stringify(data));
+            let objTeamPermissions = [];
+            let teamsData = data;//JSON.parse(x);
+            // обходим полученный массив комманд
+            for (let teamData of teamsData) {
+                //log.info(`teamData.rapidView ${teamData.rapidView}`);
+                if ('rapidView' in teamData && teamData.rapidView != null && teamData.rapidView==config.rapidView) {
+                    //log.info(`Нашли команду ${JSON.stringify(teamData.team)}`);
+                    getTasksWithOutEndDate(teamData.team);
+                    break;
+                }
+            }
+        }
+    ).catch(error => {
+    log.error(error.message);
+    log.error(`Не удалось получить настройки по доскам и командам`);
+});
+/*
 let prTeamsConfigData =  m_jira.getIssue("PSQL-222","description");
 prTeamsConfigData.then(
     result => {
@@ -48,7 +69,7 @@ prTeamsConfigData.then(
     error => {
         log.error(`Не удалось считать настройки по командам`);
     }
-)
+)*/
 
 function getTasksWithOutEndDate(teamData){
     // формируем данные для запроса

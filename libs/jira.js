@@ -14,6 +14,7 @@ var vGlobal = {
         "searchIssue":jiraURL+"/rest/api/2/search", // vGlobal.jira.searchIssue
         "postIssueBulk":jiraURL+"/rest/api/2/issue/bulk/", // vGlobal.jira.postIssueBulk
         "postIssueLink":jiraURL+"/rest/api/2/issueLink/", // vGlobal.jira.postIssueLink
+        board_team_config:"https://dev.gitlab-pages.aservices.tech/jira-automatizator-scripts/planningConfig.json",
         "fields":{
             "epicLink":"customfield_10100", // vGlobal.jira.fields.epicLink
             "epicName":"customfield_10102", // vGlobal.jira.fields.epicName
@@ -226,7 +227,25 @@ function getIssuesByFilter(jqlQuery, fields){
         )
     })
 }
-
+// асинхронный запрос для получения данных json
+async function getJson(url){
+    // x-atlassian-mau-ignore: true
+    //require('atlassian/analytics/user-activity-xhr-header').uninstall();
+    const response = await fetch(url,{
+        method: 'GET',
+        //mode: 'no-cors',
+        cache: 'no-cache'
+    });
+    //log(`response.status ${response.status}`);
+    //log(`response.statusText ${response.statusText}`);
+    //require('atlassian/analytics/user-activity-xhr-header').install();
+    if (!response.ok) {
+        const message = `Ошибка запроса response.status=${response.status}, url=${url}`;
+        throw new Error(message);
+    }
+    const data = await response.json();
+    return data
+}
 function f1(){
     let url = new URL(vGlobal.jira.getIssue+"SS-11886");
     fetch(url, {
@@ -265,6 +284,7 @@ function f2(){
 module.exports.f1 = f1
 module.exports.f2 = f2
 module.exports.getIssue = getIssue
+module.exports.getJson = getJson
 module.exports.getIssuesByFilter = getIssuesByFilter
 module.exports.getIssueWorklog = getIssueWorklog
 module.exports.getIssuesWorklogs = getIssuesWorklogs
