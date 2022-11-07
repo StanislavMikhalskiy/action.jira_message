@@ -18,9 +18,8 @@ if (!arguments.message) {
 }*/
 
 //log.info(Math.random().toString(26).slice(2))
-
+//
 let mess = {
-    "is_markdown_support": true,
     "content": {
         "head": {
             "text": "Служба оповещений"
@@ -35,4 +34,5 @@ let mess = {
 }
 
 //module_sendmessage.sendMessage(arguments.room, arguments.message, toAll);
-module_sendmessage.sendMessageZoomWH(arguments.room,mess)
+//module_sendmessage.sendMessageZoomWH(arguments.room,mess)
+module_sendmessage.sendMessageZoomProxy(arguments.room,mess)

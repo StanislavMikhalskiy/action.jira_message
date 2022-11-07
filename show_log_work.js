@@ -293,7 +293,6 @@ function sendReportMessage(teamWorklog, date){
     //message+=`\n\n_Детальная информация_${fullInfo}`;
     log.info(`${message}`);
     let mess = {
-        "is_markdown_support": true,
         "content": {
             "head": {
                 "text": `Залогированное время`,
@@ -304,7 +303,7 @@ function sendReportMessage(teamWorklog, date){
             "body": shortInfoArr
         }
     }
-    m_sendmessage.sendMessageZoomWH(config.room,mess)
+    m_sendmessage.sendMessageZoomProxy(config.room,mess)
 }
 
 /*

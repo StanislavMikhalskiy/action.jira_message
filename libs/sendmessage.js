@@ -97,5 +97,51 @@ let sendMessageZoomWH = function(room, message) {
     } else log.warn(`Не удалось определить данные канала для room = ${room}`);
 }
 
+let sendMessageZoomProxy = function(room, message) {
+    const uid = Math.random().toString(26).slice(2);
+    /*if (!room) {
+        log.warn("Не задан параметр 'url'");
+        return;
+    }*/
+    if (!message) {
+        log.warn("Не задан параметр 'message'");
+        return;
+    }
+    let messageBody= {
+        "to": room,
+        "content": message.content
+    }
+    //`{"to": ${room}},`+message;
+
+    log.info(JSON.stringify(messageBody));
+    let url = new URL(`http://notifier-awf.prod.awf.aservices.tech/api/v1/zoom/rawMessage`);
+    fetch(url, {
+        method: 'post',
+        headers: {
+            "Content-type": "application/json"
+        },
+        body: JSON.stringify(messageBody)
+        //body: messageBody
+    }).then(
+        function(response) {
+            if (response.status != "200") {
+                log.error(`Ошибка отправки сообщения, response.status = ${response.status} (uid=${uid})`);
+                response.json().then(function(data) {
+                    log.error(`${JSON.stringify(data)} (uid=${uid})`);
+                });
+            } else {
+                log.info(`Сообщение успешно отправлено (uid=${uid})`);
+                /*response.json().then(function(data) {
+                    //Smart_log(ln+`Ответ ${JSON.stringify(data)}`);
+                })*/
+            }
+        }
+    )
+        .catch(function (error) {
+            log.error(`Ошибка отправки сообщения ${error} (uid=${uid})`);
+        });
+}
+
 module.exports.sendMessage = sendMessage;
 module.exports.sendMessageZoomWH = sendMessageZoomWH;
+module.exports.sendMessageZoomProxy = sendMessageZoomProxy;
