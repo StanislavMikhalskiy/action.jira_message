@@ -103,6 +103,7 @@ function getWorkTime(teamData){
     }
     developers = developers.slice(0,-1); // удаляем последнюю лишнюю запятую
     let addJQLDebug = ''; //`and issue in (SS-12024,SS-11970,SS-11834,SS-12008,SS-12062,SS-12061,SS-12060,SS-12019,SS-12050,SS-12102,SS-12056,SS-12088,SS-12030,SS-11981,SS-12085,SS-12070)`;
+    //developers = "a.kovalev"
     let jqlQuery = `worklogDate >= "-${config.dayInPast}d" and worklogDate <= "-${config.dayInPast}d" and worklogAuthor in (${developers}) ${addJQLDebug}`;//
     //log.info(`jqlQuery = ${jqlQuery}`);
     let prWorklogs = m_jira.getIssuesByFilter(jqlQuery,"key");
@@ -145,6 +146,7 @@ function parseWorklogSlowly(team, obj){
                 //log.info(`${result[0]}`);
                 // обходим результаты по задачам
                 for(let issueWorklogs of result){
+                    //log.info(`${issueWorklogs}`);
                     let objIssueWorklogs = JSON.parse(issueWorklogs);
                     // обходим worklog-и по задаче
                     for(let worklog of objIssueWorklogs.worklogs){
